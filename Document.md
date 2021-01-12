@@ -43,7 +43,24 @@ El módulo de registro es el encargado de aceptar las peticiones de registro de 
 Para poder registrase en la aplicación el usuario debe colocar un email que exista, ademas no haberse registrado con ese anteriormente. Para asegurar la veracidad del email, se implemento el siguiente código:
 
 ```bash
-$ flask db init
+def getEmail(email):
+  '''
+  Este método verifica si el correo existe en los DNS de email 
+  y ademas si ya fue utilizado por el usario anteriormente en
+  algunas de nuestras aplicaciones.
+  
+  return "No": en caso no exista el correo o ya fue utilizado
+  return "Ok": en caso exista el correo y no se encuentra en nuestra base de datos
+  '''
+  
+  # Verifica en los DNS de emails
+  is_valid = validate_email(email,verify=True)
+  # Verifica en nuestra base de datos
+  em = selectUserID_app(email)
+  if is_valid == True and em == '':
+    return "Ok", 200
+  else:
+    return "No", 400
 ```
 
 #### Validación del DNI
