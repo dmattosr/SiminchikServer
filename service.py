@@ -5,7 +5,7 @@ from flask_cors import CORS
 from datetime import timedelta  
 from flask import make_response, current_app  
 from functools import update_wrapper
-
+from flask import send_file, send_from_directory, safe_join, abort
 import os
 from hashlib import sha512
 from werkzeug.utils import secure_filename
@@ -18,13 +18,16 @@ import appdao as adao
 import webdao as wdao
 import model
 
-
 #UPLOAD_FOLDER = '/home/usuario/Escritorio/app_test/audio'
-UPLOAD_FOLDER = '/home/quechua/app_test/audio'
+#UPLOAD_FOLDER = '/home/quechua/app_test/audio'
+UPLOAD_FOLDER = '/home/ubuntu/app_final/app_test/audio'
+
 
 app = Flask(__name__)
 CORS(app)
 
+app.config["CLIENT_AUDIOS_CHANCA"] = "/home/ubuntu/app_final/app_test/chanca/"
+app.config["CLIENT_AUDIOS_COLLAO"] = "/home/ubuntu/app_final/app_test/collao/"
 
 def crossdomain(origin=None, methods=None, headers=None, max_age=21600, attach_to_all=True, automatic_options=True):  
     if methods is not None:
@@ -65,13 +68,23 @@ def crossdomain(origin=None, methods=None, headers=None, max_age=21600, attach_t
         return update_wrapper(wrapped_function, f)
     return decorator
 
+
+@app.route("/prompts_audios/<language>")
+def get_image(language):
+    print(language)
+    if language == "chanca":
+       return send_from_directory(app.config["CLIENT_AUDIOS_CHANCA"], filename=utils.getAudio(app.config["CLIENT_AUDIOS_CHANCA"]), as_attachment=True)
+    if language == "collao":
+       return send_from_directory(app.config["CLIENT_AUDIOS_COLLAO"], filename=utils.getAudio(app.config["CLIENT_AUDIOS_COLLAO"]), as_attachment=True)
+
+
 @app.route('/upload', methods= ['GET', 'POST'])
 def upload_file():
 
     if request.method == 'POST':
 
         file = request.files['files']
-        print (file.filename)
+        print ("nombre audio: "+file.filename)
 
         if file.filename == '':
             flash('No selected file')
@@ -109,71 +122,6 @@ def post_upload():
     return final
 
 
-@app.route('/account', methods = ['POST'])
-def account():
-
-    content = request.get_json()
-    email = content['email']
-    password = sha512(content['password']).hexdigest()
-    last_name = content['last_name']
-    first_name = content['first_name']
-    phone = content['phone']
-    country_id = content['country_id']
-    created_at = strftime("%d-%m-%Y", gmtime())
-    data = gdao.insertUser(email,password,last_name,first_name,phone,country_id,created_at)
-    return data
-
-
-@app.route('/login', methods = ['POST'])
-def logins():
-
-    content = request.get_json()
-    email = content['email']
-    password = sha512(content['password']).hexdigest()
-    login = gdao.login(email,password)
-    return login
-
-
-@app.route('/favorite_phrases', methods = ['POST'])
-def update_phrases():
-
-    content = request.get_json()
-    email = content['email']
-    text_source = content['text_source']
-    like_flag = content['like_flag']
-    adao.updatePhrases(email,text_source,like_flag)
-    return "1"
-
-
-@app.route('/phrases', methods = ['POST'])
-def phrases():
-
-    content = request.get_json()
-    email = content['email']
-    data = adao.selectPhrases(email)
-    return data
-
-
-@app.route('/config', methods = ['POST'])
-def config():
-
-    content = request.get_json()
-    email = content['email']
-    data = adao.selectConfig(email)
-    return data
-
-
-@app.route('/update_config', methods = ['POST'])
-def updateConfig():
-
-    content = request.get_json()
-    email = content['email']
-    param = content['param']
-    desc = content['desc']
-    adao.updateConfig(email,param,desc)
-    return '1'
-
-
 @app.route('/country', methods = ['POST'])
 def country():
 
@@ -190,25 +138,6 @@ def selectAccount():
     return data
 
 
-@app.route('/recovery_password', methods = ['POST'])
-def insertPassword():
-    content = request.get_json()
-    email = content['email']
-    code = content['code']
-    password = sha512(content['password']).hexdigest()
-    gdao.updatePassword(email,code,password)
-    return "1"
-
-
-@app.route('/code', methods = ['POST'])
-def createCode():
-    content = request.get_json()
-    email = content['email']
-    upload_at = strftime("%d-%m-%Y", gmtime())
-    final = gdao.insertCode(email,upload_at)
-    return final
-
-
 @app.route('/account_app', methods = ['POST'])
 def account_app():
 
@@ -219,27 +148,45 @@ def account_app():
     first_name = content['first_name']
     phone = content['phone']
     dni = content['dni']
+    native_lang = content['native_lang']
     region_id = content['region_id']
     provincia_id = content['provincia_id']
     distrito_id = content['distrito_id']
     created_at = strftime("%d-%m-%Y", gmtime())
-    data = gdao.insertUser_app(email,password,first_name,last_name,dni,phone,region_id,provincia_id,distrito_id,created_at)
-    return data
+    data = gdao.insertUser_app(email,password,first_name,last_name,dni,phone,native_lang,region_id,provincia_id,distrito_id,created_at)
+    a = '"email": "0"'
+    if data.find(a) != -1:
+	return data, 400
+    else:
+        return data
 
 @app.route('/login_app', methods = ['POST'])
 def logins_app():
 
     content = request.get_json()
+    print(content)
     email = content['email']
     password = sha512(content['password']).hexdigest()
     login = gdao.login_app(email,password)
-    return login
+    print(login)
+    a = '"email": "0"'
+    if login.find(a) != -1:
+	return login, 400
+    else:
+    	return login
 
 @app.route('/email_app', methods = ['POST'])
 def selectAccount_app():
     content = request.get_json()
     email = content['email']
     data = gdao.selectUserEmail_app(email)
+    return data
+
+@app.route('/count_text', methods = ['POST'])
+def selectText():
+    content = request.get_json()
+    lang = content['lang']
+    data = adao.select_text(lang)
     return data
 
 @app.route('/upload_app', methods= ['GET', 'POST'])
@@ -271,7 +218,46 @@ def upload_file_app():
     else:
         data = {'user_app_id': "0" ,'dni': "0", 'audio_name':"0"}
         final = final = json.dumps(data,ensure_ascii=False).encode('utf8')
-        return final
+        return final, status.HTTP_404_NOT_FOUND
+
+@app.route('/lang', methods = ['POST'])
+def language():
+
+    data = gdao.selectLang()
+    return data
+
+@app.route('/vemail',methods = ['POST'])
+def vemail():
+    content = request.get_json()
+    email = content['email']
+    data = gdao.getEmail(email)
+    return data
+
+@app.route('/dni',methods = ['POST'])
+def dni():
+    content = request.get_json()
+    dni = content['dni']
+    data = gdao.getDNI(dni)
+    return data
+
+@app.route('/dialecto',methods = ['POST'])
+def dialecto():
+    content = request.get_json()
+    ans_question = content['respuesta']
+    data = gdao.getDialecto(ans_question)
+    return data
+
+@app.route('/dialecto_region',methods =['POST'])
+def dialecto_region():
+    content = request.get_json()
+    print(content)
+    dep = content['departamento']
+    pro = content['provincia']
+    dis = content['distrito']
+    data = gdao.getDialectoRegion(dep,pro,dis)
+    print(data)
+    return data
+
 
 if __name__ == '__main__':
 

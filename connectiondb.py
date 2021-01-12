@@ -14,7 +14,8 @@ def run_query(query,data):
     
     datos = [DB_HOST, DB_USER, DB_PASS, DB_NAME] 
  
-    conn = MySQLdb.connect(*datos) # Conectar a la base de datos 
+    conn = MySQLdb.connect(*datos) # Conectar a la base de datos
+    conn.set_character_set('utf8') 
     cursor = conn.cursor()         # Crear un cursor
     if data == "":
         cursor.execute(query) # Ejecutar una consulta 

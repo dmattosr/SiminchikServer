@@ -7,6 +7,9 @@ import json
 import connectiondb as conn
 import utils
 import message_service as mservice
+from validate_email import validate_email
+import requests
+import pandas as pd
 
 reload(sys)
 sys.setdefaultencoding('Cp1252')
@@ -132,6 +135,37 @@ def selectCountry():
     final = json.dumps(data,ensure_ascii=False).encode('utf8')
     return final
 
+def selectLang():
+
+    query = "SELECT language_id, iso, name FROM language;"
+    data = ""
+    cursor = conn.run_query(query,data)
+
+    language_id = []
+    iso = []
+    name = []
+
+    for (ids, i, names) in cursor:
+
+        language_id.append(ids)
+        iso.append(i)
+        name.append(names)
+
+    i = 0
+
+    language = []
+
+    for a in language_id:
+        
+        p = {'language_id':language_id[i],'iso': iso[i],'name':name[i]}
+        language.append(p)
+        i = i + 1
+
+    data = {'language': language}
+    final = json.dumps(data,ensure_ascii=False).encode('utf8')
+    return final
+
+
 
 def updatePassword(email,code,password):
 
@@ -192,13 +226,13 @@ def selectCode(user_id):
 
     return code
 
-def insertUser_app(email,password,first_name,last_name,dni,phone,region_id,provincia_id,distrito_id,created_at):
+def insertUser_app(email,password,first_name,last_name,dni,phone,native_lang,region_id,provincia_id,distrito_id,created_at):
 
     em = selectUserID_app(email)
     d = selectDNI_app(dni)
     if (em == '' and d == ''):
-        query = "INSERT INTO user_app (email,password,first_name,last_name,dni,phone,region,provincia,distrito,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s);"
-        data = (email,password,first_name,last_name,dni,phone,region_id,provincia_id,distrito_id,created_at)
+        query = "INSERT INTO user_app (email,password,first_name,last_name,dni,phone,native_lang,region,provincia,distrito,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s);"
+        data = (email,password,first_name,last_name,dni,phone,native_lang,region_id,provincia_id,distrito_id,created_at)
         conn.run_query(query,data)
         user_id = selectUserID_app(email)
         data = {'user_id': user_id ,'email': email, 'dni':dni, 'first_name':first_name, 'last_name': last_name}
@@ -237,7 +271,7 @@ def selectDNI_app(dni):
 
 def login_app(email,password):
 
-        query = "SELECT password,user_app_id, dni, first_name, last_name FROM user_app WHERE email = '%s' LIMIT 1; " %(email)
+        query = "SELECT password,user_app_id, dni, first_name, last_name, native_lang FROM user_app WHERE email = '%s' LIMIT 1; " %(email)
         data = ""
         cursor = conn.run_query(query,data)
 
@@ -246,8 +280,9 @@ def login_app(email,password):
         first_name = ""
         last_name = ""
         dni = ""
+        nl = ""
 
-        for (password_bd, user, d, fname, lname) in cursor:
+        for (password_bd, user, d, fname, lname, nls) in cursor:
                 password_bd = str(password_bd)
                 password_bd = re.sub('[%s]' % re.escape(string.punctuation),"", password_bd).lower()
                 if password == password_bd:
@@ -256,6 +291,7 @@ def login_app(email,password):
                         first_name = fname
                         last_name = lname
                         dni = d
+                        nl = nls
 
         if c == 1:
 
@@ -266,7 +302,7 @@ def login_app(email,password):
 		for c in cursor:
 			count = c
 
-                data = {'user_app_id': user_app_id ,'email': email, 'dni': dni, 'first_name':first_name, 'last_name': last_name, 'count': count}
+                data = {'user_app_id': user_app_id ,'email': email, 'dni': dni, 'first_name':first_name, 'last_name': last_name, 'lang':nl, 'count': count}
                 final = final = json.dumps(data,ensure_ascii=False).encode('utf8')
                 return final
         else:
@@ -313,3 +349,99 @@ def selectUserEmail_app(email):
         data = {'user_app_id': user_app_id, 'dni': dni, 'email': email, 'first_name':first_name, 'last_name': last_name,'count':count}
         final = final = json.dumps(data,ensure_ascii=False).encode('utf8')
         return final
+
+
+def getEmail(email):
+    
+    is_valid = validate_email(email,verify=True)
+    em = selectUserID_app(email)
+    if is_valid == True and em == '':
+	return "Ok"
+    else:
+        return "No"
+
+
+def getDNI(dni):
+     url = "https://dni.optimizeperu.com/api/persons/"
+     r = requests.get(url+dni)
+     r.encoding = 'uft-8'
+     print(r.text)
+     final = json.dumps(r.text,ensure_ascii=False)
+     print(final)
+     return final
+
+def getDialecto(ans):
+     chanka = 0
+     collao = 0
+     dialecto = ""
+     if ans[0] == 'a':
+     	chanka += 1
+     if ans[0] == 'b' or ans[0] == 'd':
+     	collao += 1
+     if ans[1] == 'a':
+	chanka += 1
+     if ans[1] == 'c':
+        collao += 1
+     if ans[2] == 'e':
+        chanka += 1
+     if ans[2] == 'b':
+        collao += 1
+     if ans[3] == 'a':
+	chanka += 1
+     if ans[3] == 'e':
+ 	collao += 1
+     if ans[4] == 'b':
+	chanka += 1
+     if ans[4] == 'a':
+	collao += 1
+     print('Respuestas Chanka: ',chanka)
+     print('Respuestas Collao: ',collao) 
+     suma = chanka + collao
+     print('La suma es: ',suma)
+     if suma >= 4:
+	if chanka > collao:
+           print('chanca')
+	   dialecto = "chanca"
+        if collao > chanka:
+	   print('collao')
+	   dialecto = "collao"
+	if chanka == collao:
+	   dialecto = "chanca"
+     data = {"dialecto":dialecto}
+     final = json.dumps(data,ensure_ascii=False).encode('utf8')
+     return final
+
+
+def getEnglish(text):
+    text = str(text)
+    text = text.replace('í','i')
+    text = text.replace('é','e')
+    text = text.replace('á','a')
+    text = text.replace('ú','u')
+    text = text.replace('ó','o')
+    return text
+
+
+def getDialectoRegion(dep,pro,dis):
+     data = pd.read_excel('dialecto.xls')
+     data['Departamento'] = data['Departamento'].apply(getEnglish)
+     data['Distrito'] = data['Distrito'].apply(getEnglish)
+     df_mask=  data.query('Departamento == "'+dep+'" and Distrito == "'+dis+'"')
+     dialecto = df_mask['Dialecto Quechua']
+     ta = len(dialecto)
+     dialect = ""
+     print(dialecto)
+     if ta == 0:
+	dialect = "0"
+     else:
+	nmp=dialecto.to_numpy()
+	nmp = str(nmp[0])
+	if nmp == "Chanka":
+	   dialect = "chanca"
+	if nmp == "Cuzco-Collao":
+	   dialect = "collao"
+	if nmp == "0":
+	   dialect = "0"
+     data = {'dialecto': dialect}
+     final = json.dumps(data,ensure_ascii=False).encode('utf8')
+     return final	

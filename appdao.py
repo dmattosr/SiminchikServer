@@ -26,9 +26,9 @@ def insertAudio(email,name,url,upload_at):
 
 
 def selectAudio(name,path):
-
+    print "SA1"
     result = model.run(path+"/"+name)
-
+    print "SA2"
     query = "SELECT phrase_id, upload_at FROM audio WHERE name = '"+name+"' LIMIT 1;"
     data = ""
     cursor = conn.run_query(query,data)
@@ -152,9 +152,49 @@ def selectUserIdDNI_app(dni):
     
     return user_app_id
 
+def select_text1():
+    query = "SELECT text_id FROM prompts_names"
+    data = ""
+    cursor = conn.run_query(query,data)
+    text_ids = []
+    for text in cursor:
+        text_ids.append(text)
+    data = {'text': text_ids}
+    final = json.dumps(data,ensure_ascii=False).encode('utf8')
+    return final
+
+def select_text(lang):
+
+    query = "SELECT id, text FROM text_prompt WHERE status = 0 and type_lang = %s;" %(lang)
+    data = ""
+    cursor = conn.run_query(query,data)
+
+    country_id = []
+    name = []
+
+    for (ids, texts) in cursor:
+
+        country_id.append(ids)
+        name.append(texts)
+
+    i = 0
+
+    country = []
+
+    for a in country_id:
+        
+        p = {'id':country_id[i],'text':name[i]}
+        country.append(p)
+        i = i + 1
+
+    data = {'text_prompts': country}
+    final = json.dumps(data,ensure_ascii=False).encode('utf8')
+    return final
+
 def record_audio(filename,date):
 
     filenames = filename.split('_')
+    number_id = filenames[2].split('.')
     user_app_id = selectUserIdDNI_app(filenames[0])
     print user_app_id
     print filenames[0]
@@ -166,7 +206,9 @@ def record_audio(filename,date):
     for user,c in cursor:
         user_app_test_id = user
         count = c + 1
-    print "2"
+    query = "UPDATE text_prompt SET status = %s WHERE id = %s"
+    data = (1,int(number_id[0]))
+    conn.run_query(query,data)
     if user_app_test_id == '':
 
         query = "INSERT INTO audios_app (user_app_id,date,status) VALUES (%s,%s,%s)"
