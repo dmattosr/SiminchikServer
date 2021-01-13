@@ -1,6 +1,6 @@
 # Siminchik Server
 
-SiminchikServer es un servidor que procesa diversas aplicaciones de la fundación Siminchik, entre las aplicaciones que procesa se encuentra el Automatic Speech Recognition (Qillqaq), Text-To-Speech, Recolector de Prompts (Tarpuriq) y el Recolecetor de Speech Corpus (Huqariq). El servidor puede enviar información a aplicaciones moviles, websites y otras aplicaciones mediante los Endpoints que brinda.
+SiminchikServer es un servidor que procesa diversas aplicaciones de la Fundación Siminchikkunarayku (https://www.siminchikkunarayku.pe). Las aplicaciones que procesa actualmente son las siguientes: un Automatic Speech Recognition (Qillqaq), Text-To-Speech (TTS), Recolector de Prompts (Tarpuriq) y el Recolector de Speech Corpus (Huqariq). El servidor puede enviar información a aplicaciones moviles, websites y otras aplicaciones mediante los endpoints que brinda.
 
 
 **Table of Contents**
@@ -13,8 +13,10 @@ SiminchikServer es un servidor que procesa diversas aplicaciones de la fundació
   - [Sin modelo de lenguaje](#sin-modelo-de-languaje)
 - [Huqariq](#huqariq)
 - [Tarpuriq](#tarpuriq)
-- [Instalación de Gunicorn](#instalación-de-gunicorn)
-- [Servidor en marcha](#servidor-en-marcha)
+- [Servidor en desarrollo](#servidor-en-desarrollo)
+- [Servidor en producción](#servidor-en-producción)
+  - [Instalación de gunicorn](#instalación-de-gunicorn)
+  - [Modo en producción](#modo-en-producción)
 - [Recomendaciones](#recomendaciones)
 - [Documentación](#documentación)
 - [Contacto](#contacto)
@@ -132,25 +134,33 @@ A continuación se muestra la distribución de los textos por cada variedad.
 
 Los textos que sirven como base para la grabaciones de los prompts fueron recolectados de los diccionarios realizados por el Ministerio de Educación de Perú, asi mismo, por otros diccionarios como el "Diccionario Funcional de Quechua-Ingles" de Clodoaldo Soto Ruiz y el libro "Autobiografía" de Gregorio Condori Mamani.
 
+## Servidor en desarrollo
 
-## Instalación de Gunicorn
+Con el fin testear el funcionamiento del servidor, el siguiente comando nos permite correr el servidor en modo de desarrollo:
 
-Primero, se debe instalar guniron
+```bash
+python server.py
+```
+
+## Servidor en producción
+
+### Instalación de gunicorn
+
+Para poder instalar gunicorn necesitamos correr el siguiente comando:
 
 ```bash
 pip install gunicorn
 ```
 
-Segundo, verificamos con el siguiente comando para asegurarnos de que el servicio se esté ejecutando
+Para verificar si instalamos de forma correcta gunicorn debemos colocar el siguiente comando:
 
 ```bash
 gunicorn --workers 3 --bind 0.0.0.0:5000 -m 007 wsgi:app
 ```
 
+### Modo en producción
 
-## Servidor en marcha
-
-Solo debemos correr el siguiente comando para lanzar el servidor Siminchik.
+Con el fin de poner en modo de producción nuestro servidor debemos correr el siguiente comando:
 
 ```bash
 nohup gunicorn --workers 3 --bind 0.0.0.0:5000 -m 007 wsgi:app
@@ -158,7 +168,7 @@ nohup gunicorn --workers 3 --bind 0.0.0.0:5000 -m 007 wsgi:app
 
 ## Recommendations
 
-El servidor debe ser ubuntu 16.04 LTS, 16GB RAM, 125GB SSD.
+El servidor debe tener las siguientes características: ubuntu 16.04 LTS, 16GB RAM, 125GB SSD.
 
 
 ## Documentación
